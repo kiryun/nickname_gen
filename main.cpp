@@ -4,6 +4,8 @@
 
 using namespace std;
 
+u16string in = u"김기현";
+
 //모음 모음
 char vowel[6] = {'a', 'e', 'i', 'o', 'u', 'y'};
 
@@ -224,7 +226,7 @@ void testPrint(uint8_t* name_code)
 
 int main()
 {
-    u16string in = u"김기현";
+    
     stringstream out;
 
     uint8_t name_code[MAX] = {NULL, };
