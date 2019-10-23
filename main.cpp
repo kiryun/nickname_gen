@@ -224,7 +224,7 @@ void testPrint(uint8_t* name_code)
 
 int main()
 {
-    u16string in = u"yourname";
+    u16string in = u"김기현";
     stringstream out;
 
     uint8_t name_code[MAX] = {NULL, };
@@ -268,9 +268,11 @@ int main()
         char c = 0;
         cout<<"add vowel: ";
         cin>>c;
-
+        // scanf("%c", &c);
+        cin.clear();
         //모음을 입력했다면 추가하고 break
         if(isVowel(c)){
+            // cout<<"isVowel"<<endl;
             alphabet[len] = c;
             len += 1;
             vowel_cnt++;
@@ -279,22 +281,28 @@ int main()
         }
     }
 
-    while(true){
-        int temp = 0;
-        cout<<"nickname length?(5~7)";
-        cin>>temp;
 
-        if(temp >= 5 && temp <= 7){
-            r_len = temp;
-            break;
-        }else{
-            cout<<"invalid input"<<endl;
-        }
+    // while(true){
+    //     int temp = 0;
+    //     cout<<"nickname length?(5~7)";
+    //     cin>>temp;
+    //     // scanf("%d", temp);
+    //     cin.clear();
 
-    }
+    //     if(temp >= 5 && temp <= 7){
+    //         r_len = temp;
+    //         break;
+    //     }else{
+    //         cout<<"invalid input"<<endl;
+    //     }
+
+    // }
     // testPrint(name_code);
     
+    r_len = 5;
     gen(0, 0, 0);
+    r_len = 6;
+    gen(0, 0 ,0);
 
     return 0;
 }
