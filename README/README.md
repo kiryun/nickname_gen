@@ -58,14 +58,17 @@ D9 -> 9 + 97 = 106 = j
 
 **자음: 모음외 나머지 알파벳**
 
-1. 만약 모음이 한개도 없다면, 사용자가 원하는 모음 하나 선택할 수 있다.
-2. 모음은 중복을 허용한다.
-3. h를 제외하고는 자음뒤에는 항상 모음이어야 한다.( bh, ch등은 가능 그러나 hh는 불가능)
-4. 모음은 모음뒤에 최대 1번까지 올 수 있다.(단어내에 ee, ii 등 존재가능) 그 이후에는 자음이 와야한다.(단어내에 eee, iii는 존재할 수 없다.)
-
-
-
-
+1. 만약 모음이 2개미만이라면, 사용자는 모음하나를 추가해야한다.
+   -> 알파벳 집합에서 모음있는지 찾아야함
+2. 사용자는 5~7사이의 nickname길이를 정해야한다.
+3. 모음은 연속을 허용한다.(ai, ae, aie, aoue 등 가능 )
+   -> 
+4. 자음은 선택적 연속을 허용한다.(tt, ss 등 가능, ts, bt 등 불가능)
+   -> 이전에 문자가 자음이었는지 알아봐야함. 현재문자와 비교
+5. 각 문자는 뒤에 같은 글자 최대 1번까지 올 수 있다.(단어내에 ee, ii, bb, cc, tt 등 존재가능) 그 이후에는 자음또는 모음이 와야한다.(단어내에 eee, iii, ttt, bbb 등은 존재할 수 없다.)
+   -> 이전에 문자가 현재의 문자와 같다면 `연속성 count` +1 한다. `연속성 count`가 만약 2라면 안됨
+6. h는 자음+자음에서 wild카드이다.(bh, ch 가능/bbh, tth는 불가능)
+   ->이전에 h가 나왔다면 같은 단어가 나온것으로 취급(연속적이다 취급)
 
 
 
@@ -86,12 +89,306 @@ D9 -> 9 + 97 = 106 = j
 ```c++
 #include <bits/stdc++.h>
 
+#define MAX 255
+
 using namespace std;
+
+//모음 모음
+char vowel[6] = {'a', 'e', 'i', 'o', 'u', 'y'};
+
+//입력받은 이름
+//이름에서 추출된 알파벳
+uint16_t name[MAX] = {NULL, };
+char alphabet[MAX] = {NULL, };
+
+//나올 수 있는 단어의 최대 길이
+int len = 0;
+//dfs 순회중 방문한 곳
+bool visit[MAX] = {false, };
+//결과가 저장되는 곳
+vector<char> result;
+//결과 길이 정하기
+int r_len = 0;
+
+template<typename T>
+int arrLen(T* arr)
+{
+	int i = 0;
+	while (arr[i] != NULL)
+	{
+		i++;
+	}
+	return i;
+}
+
+void split(uint16_t* source, uint8_t* result)
+{
+    int source_len = arrLen(source);
+    int src = 0;
+    int splt = 0;
+
+    while(source[src] != NULL){
+        if(splt % 2){
+            result[splt] = source[src] & 0x00ff;
+            src++;
+        }else{
+            result[splt] = source[src] >> 8;
+        }
+        splt++;
+    }
+}
+
+void Print()
+{
+    ofstream out("nick.txt", ios::app);
+
+    //result 배열에 저장된 문자 수 만큼 순회
+    for(int i = 0; i<result.size(); i++){
+        if(out.is_open()){
+            out<<result[i];
+        }
+        cout<<result[i];
+    }
+    out<<"\n";
+    cout<<"\n";
+}
+
+bool isVowel(char c)
+{
+    if( c == 'a' or
+    c == 'e' or
+    c == 'i' or
+    c == 'o' or
+    c == 'u' or
+    c == 'y' ){
+        return true;
+    }    
+    return false;
+}
+
+//자음인가
+bool isConsonant(char c)
+{
+    if(!isVowel(c)){
+        return true;
+    }
+    return false;
+}
+
+//모두 사용했는가
+bool usingAll()
+{
+    for(int i = 0; i<len; i++){
+        if(!visit[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
+//dfs
+//idx: 배열 순회중 인덱스 어디까지 왔는지
+//last: result배열의 가장 최근에 넣은 idx+1
+//continuous: 문자 연속 count
+void gen(int idx, int last, int continuous)
+{
+    //탈출조건
+    //알파벳 다 썼을 때
+    if(result.size() == r_len){
+        //출력 후 리턴
+        // cout<<"usingAll"<<endl;
+        Print();
+        return;
+    }
+
+    //alphabet 배열 전체를 순회
+    for(int i = 0; i<len; i++){
+        // cout<<i<<endl;
+        if(visit[i]){
+            continue;
+        }
+        
+        if(last == 0){
+            visit[i] = true;
+            result.push_back(alphabet[i]);
+
+            gen(i, last+1, continuous);
+
+            visit[i] = false;
+            result.pop_back();
+        }else{
+            //어떤 문자도 같은 문자 3개는 안됨
+            if(continuous > 1){
+                // cout<<"continuous > 1"<<endl;
+                continue;
+            }
+
+            //이전에 넣은 값과 현재 보고있는 값이 같거나
+            //이전에 넣은 값이 자음이면서 현재 보고있는 값이 h라면
+            if( (result[last-1] == alphabet[i]) or
+            (isConsonant(result[last-1]) and alphabet[i] == 'h')){
+                visit[i] = true;
+                result.push_back(alphabet[i]);
+                continuous += 1;
+
+                // //현재도 자음이고 남은 것도 자음밖에 없다면
+                // bool con = true;
+                // for(int i = 0; i<len; i++){
+                //     if(!visit[i]){
+                //         if(isVowel(alphabet[i])){
+                //             con = false;
+                //         }
+                //     }
+                // }
+                // //출력 후 return
+                // if(con && isConsonant( alphabet[i]) ){
+                //     Print();
+                //     return;
+                // }
+
+                gen(i, last+1, continuous);
+
+                visit[i] = false;
+                result.pop_back();
+                continuous -= 1;
+            }else{
+                //이전에 넣은게 자음이고 현재도 자음이라면
+                if(isConsonant(result[last-1]) & isConsonant(alphabet[i])){
+                    // cout<<"자음+자음"<<endl;
+                    continue;
+                }
+
+                visit[i] = true;
+                result.push_back(alphabet[i]);
+                int temp = continuous;
+                continuous = 0;
+
+                //남은게 자음밖에 없으며
+                //
+
+                gen(i, last+1, continuous);
+
+                visit[i] = false;
+                result.pop_back();
+                continuous = temp;
+            }
+        }
+    }
+    
+    // Print();
+    // return;
+
+}
+
+void testPrint(uint8_t* name_code)
+{
+    int i = 0;
+    while(name[i] != NULL){
+        cout<<name[i]<<" ";
+        i++;
+    }
+    cout<<endl;
+
+    i = 0;
+    while(name_code[i] != NULL){
+        cout<<name_code[i]<<" ";
+        i++;
+    }
+    cout<<endl;
+
+    i = 0;
+    while(alphabet[i] != NULL){
+        cout<<alphabet[i]<<" ";
+        i++;
+    }
+    cout<<endl;
+
+    i = 0;
+    while(alphabet[i] != NULL){
+        cout<<visit[i]<<" ";
+        i++;
+    }
+    cout<<endl;
+}
 
 int main()
 {
-  return 0;
+    u16string in = u"yourname";
+    stringstream out;
+
+    uint8_t name_code[MAX] = {NULL, };
+
+    // for(int i = 0; i<MAX; i++){
+    //     name[i] = NULL;
+    //     name_code[i] = NULL;
+    //     visit[i] = NULL;
+    // }
+
+    for(int i = 0; i<in.size(); i++){
+        name[i] = in[i];
+    }
+
+    split(name, name_code);
+
+    int k = 0;
+    while(name_code[k] != NULL){
+        // cout<<k<<endl;
+        alphabet[k] = (name_code[k] % 26) + 97;
+        k++;
+    }
+
+
+    //추출한 alphabet 길이
+    while(alphabet[len] != NULL){
+        // cout<<len<<endl;
+        len++;
+    }
+
+    //만약 모음이 2개 미만이라면 모음을 하나더 입력한다.
+    int vowel_cnt = 0;
+    for(int i = 0; i<len; i++){
+        if( isVowel(alphabet[i]) ){
+            // cout<<"vowel++"<<endl;
+            vowel_cnt++;
+        }
+    }
+    
+    while(vowel_cnt < 2){
+        char c = 0;
+        cout<<"add vowel: ";
+        cin>>c;
+
+        //모음을 입력했다면 추가하고 break
+        if(isVowel(c)){
+            alphabet[len] = c;
+            len += 1;
+            vowel_cnt++;
+        }else{
+            cout<<"plz input vowel"<<endl;
+        }
+    }
+
+    while(true){
+        int temp = 0;
+        cout<<"nickname length?(5~7)";
+        cin>>temp;
+
+        if(temp >= 5 && temp <= 7){
+            r_len = temp;
+            break;
+        }else{
+            cout<<"invalid input"<<endl;
+        }
+
+    }
+    // testPrint(name_code);
+    
+    gen(0, 0, 0);
+
+    return 0;
 }
+
+
 ```
 
 
